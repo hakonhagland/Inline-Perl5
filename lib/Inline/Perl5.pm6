@@ -804,7 +804,17 @@ method require(Str $module, Num $version?, Bool :$handle) {
     }
 
     my &export := sub EXPORT(*@args) {
-            $*W.do_pragma(Any, 'precompilation', False, []);
+            #$*W.do_pragma(Any, 'precompilation', False, []);
+            "/tmp/EXPORT$*PID".IO.spurt: "EXPORT";
+            if $*W {
+                "/tmp/phaser$*PID".IO.spurt: "adding phaser";
+                my $block := {
+                    "/tmp/INIT$*PID".IO.spurt("INIT");
+                    #say "INIT!";
+                };
+                $*W.add_object($block);
+                my $op := $*W.add_phaser(Mu, 'INIT', $block, class :: { method cuid { (^2**128).pick }});
+            }
             my @symbols = self.import($module, @args.list).map({
                 my $name = $_;
                 '&' ~ $name => sub (|args) {
